@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CineTech</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="sidebar">
+    <h4>CineTech</h4>
+    <hr>
+    <nav>
+      <a href="#dashboard"><i class="fa-solid fa-house"></i> <span>Dashboard</span></a>
+      <a href="#films"><i class="fa-solid fa-film"></i> <span>Films</span></a>
+      <a href="#realisateurs"><i class="fa-solid fa-video"></i> <span>Réalisateurs</span></a>
+      <a href="#ajout-film"><i class="fa-solid fa-plus"></i> <span>Ajouter Film</span></a>
+    </nav>
+  </div>
+
+  <div class="main" id="main">
+
+    <header class="header">
+      <button id="menubtn"><i class="fa-solid fa-bars"></i></button>
+      <h1>CineTech</h1>
+      <div class="search-container">
+        <input id="searchInput" type="text" placeholder="Rechercher un film ou réalisateur...">
+        <button id="searchBtn"><i class="fa-solid fa-magnifying-glass"></i></button>
+      </div>
+      <button class="notes-btn">Top Rated</button>
+    </header>
+
+    <main>
+      <section id="dashboard">
+        <h2>Dashboard</h2>
+        <div class="row">
+          <div class="card-box"><h5>Total Films</h5><p id="totalFilms" class="number">3</p></div>
+          <div class="card-box"><h5>Total Réalisateurs</h5><p id="totalDirectors" class="number">1</p></div>
+          <div class="card-box"><h5>Films Populaires</h5><p id="popularFilms" class="number">2</p></div>
+          <div class="card-box"><h5>Durée Moyenne</h5><p id="avgDuration" class="number">156 min</p></div>
+        </div>
+      </section>
+
+      <section id="films">
+        <h2>Films</h2>
+        <div class="sort-buttons">
+          <button id="sortBtn">Trier par genre</button>
+        </div>
+        
+        <div class="film-grid" id="existingFilms">
+          <div class="film-card">
+            <img src="https://m.media-amazon.com/images/M/MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@._V1_.jpg" alt="Inception">
+            <div class="film-info">
+              <h5>Inception</h5>
+              <p>2010 • Sci-Fi • 148 min</p>
+              <p class="dir-name">Réalisé par C. Nolan</p>
+              <button class="details-btn">Voir détails</button>
+            </div>
+          </div>
+          <div class="film-card">
+            <img src="https://m.media-amazon.com/images/M/MV5BMTMxNTMwODM0NF5BMl5BanBnXkFtZTcwODAyMTk2Mw@@._V1_.jpg" alt="Dark Knight">
+            <div class="film-info">
+              <h5>The Dark Knight</h5>
+              <p>2008 • Action • 152 min</p>
+              <p class="dir-name">Réalisé par C. Nolan</p>
+              <button class="details-btn">Voir détails</button>
+            </div>
+          </div>
+          <div class="film-card">
+            <img src="https://m.media-amazon.com/images/M/MV5BZjdkOTU3MDktN2IxOS00OGEyLWFmMjktY2FiMmZkNWIyODZiXkEyXkFqcGdeQXVyMTMxODk2OTU@._V1_.jpg" alt="Interstellar">
+            <div class="film-info">
+              <h5>Interstellar</h5>
+              <p>2014 • Aventure • 169 min</p>
+              <p class="dir-name">Réalisé par C. Nolan</p>
+              <button class="details-btn">Voir détails</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="realisateurs">
+        <h2>Réalisateurs</h2>
+        <div class="film-grid" id="directorsGrid">
+           <div class="card-box">
+             <i class="fa-solid fa-user-tie" style="font-size: 40px; color: var(--accent-yellow);"></i>
+             <h5>Christopher Nolan</h5>
+             <p>3 Films enregistrés</p>
+           </div>
+        </div>
+      </section>
+
+      <section id="ajout-film">
+        <h2>Ajouter un film</h2>
+        <form id="filmForm">
+          <div class="row-inputs">
+            <input id="titre" type="text" placeholder="Titre du film" required>
+            <input id="realisateur" type="text" placeholder="Réalisateur" required>
+            <input id="genre" type="text" placeholder="Genre">
+            <input id="duree" type="number" placeholder="Durée (min)">
+            <input id="public" type="text" placeholder="Public">
+            <input id="annee" type="number" placeholder="Année">
+          </div>
+          <button type="submit">Ajouter</button>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
