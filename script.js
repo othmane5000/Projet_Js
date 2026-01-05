@@ -1,198 +1,529 @@
-const sidebar = document.getElementById("sidebar");
-const menuBtn = document.getElementById("menuBtn");
-const sections = document.querySelectorAll("main section");
-const searchInput = document.getElementById("searchInput");
-let films = JSON.parse(localStorage.getItem("films")) || [];
-const filmForm = document.getElementById("filmForm");
-const filmsList = document.getElementById("filmsList");
-const genreFilter = document.getElementById("genreFilter");
-const directorSelect = document.getElementById("directorSelect");
-let directors = JSON.parse(localStorage.getItem("directors")) || [];
-const directorForm = document.getElementById("directorForm");
-const directorNameInput = document.getElementById("directorName");
-const directorsList = document.getElementById("directorsList");
-const totalFilmsEl = document.getElementById("totalFilms");
-const totalDirectorsEl = document.getElementById("totalDirectors");
-let genreChart;
+const films = JSON.parse(localStorage.getItem('films')) || [];
+const directors = JSON.parse(localStorage.getItem('directors')) || [];
+let filteredFilms = [];
+let genreChart = null;
+let yearChart = null;
+let editingFilmId = null; 
+const sidebar = document.getElementById('sidebar');
+const menuBtn = document.getElementById('menuBtn');
+let overlay;
+const searchInput = document.getElementById('searchInput');
+const genreFilter = document.getElementById('genreFilter');
+const filmForm = document.getElementById('filmForm');
+const filmsList = document.getElementById('filmsList');
+const directorsList = document.getElementById('directorsList');
+const filmDirectorSelect = document.getElementById('filmDirector');
+const resetBtn = document.getElementById('resetBtn');
+const apiBtn = document.getElementById('apiBtn');
+const apiInput = document.getElementById('apiInput');
+const apiResult = document.getElementById('apiResult');
+const apiLoading = document.getElementById('apiLoading');
+const modal = document.getElementById('modal');
+const modalDirName = document.getElementById('modalDirName');
+const totalFilmsEl = document.getElementById('totalFilms');
+const totalDirectorsEl = document.getElementById('totalDirectors');
+const avgRatingEl = document.getElementById('avgRating');
+const topGenreEl = document.getElementById('topGenre');
+const topFilmsEl = document.getElementById('topFilms');
+const recommendationsEl = document.getElementById('recommendations');
+menuBtn.addEventListener('click', toggleSidebar);
+filmForm.addEventListener('submit', addFilm);
+resetBtn.addEventListener('click', resetFilters);
+apiBtn.addEventListener('click', searchOmdb);
+genreFilter.addEventListener('change', filterByGenre);
+searchInput.addEventListener('input', searchFilms);
 
-menuBtn.addEventListener("click", () => sidebar.classList.toggle("open"));
-
-document.querySelectorAll("#sidebar nav a").forEach(link => {
-  link.addEventListener("click", (e) => {
-    e.preventDefault();
-    const target = link.getAttribute("href").substring(1);
-    sections.forEach(sec => sec.classList.remove("active"));
-    document.getElementById(target).classList.add("active");
-    sidebar.classList.remove("open");
+document.querySelectorAll('#sidebar nav a').forEach(link => {
+  link.addEventListener('click', (e) => {
+    const target = link.getAttribute('onclick').match(/'([^']*)'/)[1];
+    switchSection(target);
   });
 });
 
-//directors
+window.addEventListener('click', (e) => {
+  if (e.target.id === 'modal') closeModal();
+});
 
-function updateDirectorSelect() {
-  directorSelect.innerHTML = '<option value="">Select director</option>';
-  directors.forEach(d => {
-    const opt = document.createElement("option");
-    opt.value = d;
-    opt.textContent = d;
-    directorSelect.appendChild(opt);
-  });
+document.addEventListener('DOMContentLoaded', () => {
+  overlay = document.createElement('div');
+  overlay.className = 'sidebar-overlay';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', toggleSidebar);
+  renderDirectors();
+  updateDirectorSelect();
+  renderFilms();
+  updateGenreFilter();
+  updateDashboard();
+});
+
+//Btn
+
+function toggleSidebar() {
+  sidebar.classList.toggle('open');
+  overlay.classList.toggle('show');
+}
+function switchSection(sectionId) {
+  document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+  document.getElementById(sectionId).classList.add('active');
+  sidebar.classList.remove('open');
+  overlay.classList.remove('show');
 }
 
-  function renderDirectors() {
-    directorsList.innerHTML = "";
-    directors.forEach((d, i) => {
-      const div = document.createElement("div");
-      div.className = "director-item";
-      div.innerHTML = `<span>${d}</span><button onclick="deleteDirector(${i})"><i class="fa-solid fa-trash"></i></button>`;
-      directorsList.appendChild(div);
-    });
-}
+//Films
 
-function deleteDirector(index) {
-  if(confirm("Delete this director?")){
-    const name = directors[index];
-    directors.splice(index,1);
-    films = films.filter(f => f.director !== name);
-    saveData();
-    renderDirectors();
-    renderFilms();
-    updateDashboard();
-    updateGenreFilter();
-  }
-}
-
-directorForm.addEventListener("submit", (e)=>{
+function addFilm(e) {
   e.preventDefault();
-  const name = directorNameInput.value.trim();
-  if(name && !directors.includes(name)){
-    directors.push(name);
-    directorNameInput.value = "";
-    saveData();
-    updateDirectorSelect();
-    renderDirectors();
+  const title = document.getElementById('filmTitle').value.trim();
+  const genre = document.getElementById('filmGenre').value;
+  const year = document.getElementById('filmYear').value;
+  const duration = document.getElementById('filmDuration').value;
+  const directorId = document.getElementById('filmDirector').value;
+  const rating = parseFloat(document.getElementById('filmRating').value);
+  const poster = document.getElementById('filmPoster').value.trim();
+  
+  if (!title || !genre || !year || !duration || !directorId) {
+    alert('Remplissez tous les champs requis!');
+    return;
   }
-});
-// FILMS
-function renderFilms(filterGenre="", search="") {
-  filmsList.innerHTML = "";
-  let filtered = films;
-  if(filterGenre) filtered = filtered.filter(f => f.genre.toLowerCase() === filterGenre.toLowerCase());
-  if(search) filtered = filtered.filter(f => f.title.toLowerCase().includes(search.toLowerCase()) || f.director.toLowerCase().includes(search.toLowerCase()));
-  filtered.forEach((f,i)=>{
-    const card = document.createElement("div");
-    card.className = "film-card";
+  
+  const directorName = directors.find(d => d.id == directorId)?.name || 'Inconnu';
+  if (editingFilmId !== null) {
+    const filmIndex = films.findIndex(f => f.id === editingFilmId);
+    if (filmIndex > -1) {
+      films[filmIndex] = {
+        id: editingFilmId,
+        title,
+        genre,
+        year: parseInt(year),
+        duration: parseInt(duration),
+        directorId: parseInt(directorId),
+        directorName,
+        rating: rating || 7,
+        poster: poster || 'https://via.placeholder.com/200x300?text=No+Image'
+      };
+      alert('Film modifié avec succès!');
+      editingFilmId = null;
+      document.querySelector('#filmForm button[type="submit"]').innerHTML = '<i class="fa-solid fa-save"></i> Enregistrer';
+    }
+  } else {
+    const film = {
+      id: Date.now(),
+      title,
+      genre,
+      year: parseInt(year),
+      duration: parseInt(duration),
+      directorId: parseInt(directorId),
+      directorName,
+      rating: rating || 7,
+      poster: poster || 'https://via.placeholder.com/200x300?text=No+Image'
+    }; 
+    films.push(film);
+    alert('Film ajouté avec succès!');
+  }
+  
+  saveData();
+  filmForm.reset();
+  renderFilms();
+  updateDashboard();
+}
+
+function deleteFilm(id) {
+  if (confirm('Supprimer ce film?')) {
+    const index = films.findIndex(f => f.id === id);
+    if (index > -1) {
+      films.splice(index, 1);
+      saveData();
+      renderFilms();
+      updateDashboard();
+    }
+  }
+}
+
+function modifierFilm(id) {
+  const film = films.find(f => f.id === id);
+  if (!film) {
+    alert('Film non trouvé!');
+    return;
+  }
+  document.getElementById('filmTitle').value = film.title;
+  document.getElementById('filmGenre').value = film.genre;
+  document.getElementById('filmYear').value = film.year;
+  document.getElementById('filmDuration').value = film.duration;
+  document.getElementById('filmDirector').value = film.directorId;
+  document.getElementById('filmRating').value = film.rating;
+  document.getElementById('filmPoster').value = film.poster;
+  editingFilmId = id;
+  document.querySelector('#filmForm button[type="submit"]').innerHTML = '<i class="fa-solid fa-edit"></i> Modifier';
+  switchSection('add');
+}
+
+function renderFilms() {
+  filmsList.innerHTML = '';
+  const toShow = filteredFilms.length > 0 ? filteredFilms : films;
+  
+  if (toShow.length === 0) {
+    filmsList.innerHTML = '<p style="color: var(--muted);">Aucun film trouvé</p>';
+    return;
+  }
+  
+  toShow.forEach(film => {
+    const card = document.createElement('div');
+    card.className = 'film-card';
     card.innerHTML = `
-      <img src="${f.poster || "https://via.placeholder.com/300x450?text=Film"}" alt="${f.title}">
+      <img src="${film.poster}" alt="${film.title}">
       <div class="info">
-        <h4>${f.title}</h4>
-        <p>${f.year} • ${f.genre} • ${f.duration} min</p>
-        <p>${f.director}</p>
-        <div class="card-actions">
-          <button class="edit" onclick="editFilm(${i})"><i class="fa-solid fa-pen"></i></button>
-          <button class="delete" onclick="deleteFilm(${i})"><i class="fa-solid fa-trash"></i></button>
-        </div>
+        <h4>${film.title}</h4>
+        <p><strong>Genre:</strong> ${film.genre}</p>
+        <p><strong>Année:</strong> ${film.year}</p>
+        <p><strong>Durée:</strong> ${film.duration} min</p>
+        <p><strong>Réal:</strong> ${film.directorName}</p>
+        <p><strong>Note:</strong> ${film.rating}/10</p>
       </div>
+      <button onclick="modifierFilm(${film.id})" style="background: var(--success); margin-bottom: 5px;">
+        <i class="fa-solid fa-edit"></i> Modifier
+      </button>
+      <button onclick="deleteFilm(${film.id})">
+        <i class="fa-solid fa-trash"></i> Supprimer
+      </button>
     `;
     filmsList.appendChild(card);
   });
 }
 
-function deleteFilm(index){
-  if(confirm("Delete this film?")){
-    films.splice(index,1);
-    saveData();
-    renderFilms();
-    updateDashboard();
-    updateGenreFilter();
-  }
-}
-
-function editFilm(index){
-  const film = films[index];
-  document.getElementById("title").value = film.title;
-  document.getElementById("genre").value = film.genre;
-  document.getElementById("year").value = film.year;
-  document.getElementById("duration").value = film.duration;
-  document.getElementById("poster").value = film.poster;
-  directorSelect.value = film.director;
-  filmForm.dataset.editIndex = index;
-  sections.forEach(sec => sec.classList.remove("active"));
-  document.getElementById("add").classList.add("active");
-}
-
-filmForm.addEventListener("submit",(e)=>{
-  e.preventDefault();
-  const filmData = {
-    title: document.getElementById("title").value.trim(),
-    genre: document.getElementById("genre").value.trim(),
-    year: document.getElementById("year").value,
-    duration: document.getElementById("duration").value,
-    poster: document.getElementById("poster").value.trim(),
-    director: directorSelect.value
-  };
-  const editIndex = filmForm.dataset.editIndex;
-  if(editIndex!==undefined){
-    films[editIndex] = filmData;
-    delete filmForm.dataset.editIndex;
+function filterByGenre() {
+  const genre = genreFilter.value;
+  if (genre === '') {
+    filteredFilms = [];
   } else {
-    films.push(filmData);
+    filteredFilms = films.filter(f => f.genre === genre);
   }
-  filmForm.reset();
-  saveData();
   renderFilms();
+}
+
+function searchFilms() {
+  const query = searchInput.value.toLowerCase();
+  if (query === '') {
+    filteredFilms = [];
+  } else {
+    filteredFilms = films.filter(f => 
+      f.title.toLowerCase().includes(query) ||
+      f.genre.toLowerCase().includes(query) ||
+      f.directorName.toLowerCase().includes(query)
+    );
+  } 
+  renderFilms();
+}
+
+function resetFilters() {
+  genreFilter.value = '';
+  searchInput.value = '';
+  filteredFilms = [];
+  renderFilms();
+}
+
+function updateGenreFilter() {
+  const genres = [...new Set(films.map(f => f.genre))];
+  genreFilter.innerHTML = '<option value="">Tous les genres</option>' +
+    genres.map(g => `<option value="${g}">${g}</option>`).join('');
+}
+
+//Realisateurs
+
+function createOrGetDirector(directorName) {
+  let director = directors.find(d => d.name.toLowerCase() === directorName.toLowerCase());
+  if (!director) {
+    director = {
+      id: Date.now(),
+      name: directorName
+    };
+    directors.push(director);
+    saveData();
+    renderDirectors();
+    updateDirectorSelect();
+  }
+  
+  return director.id;
+}
+
+function addDirector(e) {
+  e.preventDefault();
+  
+  const name = directorNameInput.value.trim();
+  
+  if (!name) {
+    alert('Entrez un nom!');
+    return;
+  }
+  
+  if (directors.find(d => d.name.toLowerCase() === name.toLowerCase())) {
+    alert('Ce réalisateur existe déjà !');
+    return;
+  }
+  
+  const director = {
+    id: Date.now(),
+    name
+  };
+  
+  directors.push(director);
+  saveData();
+  directorNameInput.value = '';
+  renderDirectors();
+  updateDirectorSelect();
   updateDashboard();
-  updateGenreFilter();
-});
+}
 
-// SEARCH 
-searchInput.addEventListener("input",()=> renderFilms(genreFilter.value, searchInput.value));
-genreFilter.addEventListener("change", ()=> renderFilms(genreFilter.value, searchInput.value));
+function deleteDirector(id) {
+  const filmCount = films.filter(f => f.directorId === id).length;
+  
+  if (filmCount > 0) {
+    alert(`Impossible! Ce réalisateur a ${filmCount} film(s).`);
+    return;
+  }
+  
+  if (confirm('Supprimer ce réalisateur?')) {
+    const index = directors.findIndex(d => d.id === id);
+    if (index > -1) {
+      directors.splice(index, 1);
+      saveData();
+      renderDirectors();
+      updateDirectorSelect();
+      updateDashboard();
+    }
+  }
+}
 
-function updateGenreFilter(){
-  const genres = [...new Set(films.map(f=>f.genre).filter(g=>g))];
-  genreFilter.innerHTML = '<option value="">All genres</option>';
-  genres.forEach(g=>{
-    const opt = document.createElement("option");
-    opt.value = g;
-    opt.textContent = g;
-    genreFilter.appendChild(opt);
+function renderDirectors() {
+  directorsList.innerHTML = '';
+  
+  if (directors.length === 0) {
+    directorsList.innerHTML = '<p style="color: var(--muted);">Aucun réalisateur</p>';
+    return;
+  }
+  
+  directors.forEach(dir => {
+    const count = films.filter(f => f.directorId === dir.id).length;
+    const card = document.createElement('div');
+    card.className = 'director-card';
+    card.innerHTML = `
+      <div class="info">
+        <h4>${dir.name}</h4>
+        <p>${count} film(s)</p>
+      </div>
+      <button onclick="deleteDirector(${dir.id})"><i class="fa-solid fa-trash"></i></button>
+    `;
+    directorsList.appendChild(card);
   });
 }
 
-function updateDashboard(){
+function updateDirectorSelect() {
+  filmDirectorSelect.innerHTML = '<option value="">Sélectionner un réalisateur</option>' +
+    directors.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+}
+
+//btn + du realisateurs
+
+function openModal() {
+  modal.classList.add('show');
+}
+
+function closeModal() {
+  modal.classList.remove('show');
+  modalDirName.value = '';
+}
+
+function addDirFromModal() {
+  const name = modalDirName.value.trim();
+  
+  if (!name) {
+    alert('Entrez un nom!');
+    return;
+  }
+  
+  const directorId = createOrGetDirector(name);
+  filmDirectorSelect.value = directorId;
+  closeModal();
+}
+
+//Dashboard
+
+function updateDashboard() {
+  updateKPI();
+  updateLists();
+  updateCharts();
+}
+
+function updateKPI() {
   totalFilmsEl.textContent = films.length;
   totalDirectorsEl.textContent = directors.length;
-  renderChart();
+  
+  const avgRating = films.length > 0 
+    ? (films.reduce((sum, f) => sum + f.rating, 0) / films.length).toFixed(1)
+    : '0.0';
+  avgRatingEl.textContent = avgRating;
+  
+  const genreCount = {};
+  films.forEach(f => {
+    genreCount[f.genre] = (genreCount[f.genre] || 0) + 1;
+  });
+  const topGenre = Object.keys(genreCount).length > 0 
+    ? Object.keys(genreCount).reduce((a, b) => genreCount[a] > genreCount[b] ? a : b)
+    : '-';
+  topGenreEl.textContent = topGenre;
 }
 
-function renderChart(){
-  const ctx = document.getElementById("genreChart").getContext("2d");
-  const genreCounts = {};
-  films.forEach(f=> { if(f.genre) genreCounts[f.genre] = (genreCounts[f.genre]||0)+1; });
-  const data = {
-    labels: Object.keys(genreCounts),
-    datasets:[{
-      label:"Films by Genre",
-      data:Object.values(genreCounts),
-      backgroundColor:Object.keys(genreCounts).map(_=>"rgba(245,197,24,0.7)"),
-      borderColor:"rgba(245,197,24,1)",
-      borderWidth:1
-    }]
+function updateLists() {
+  const topFilms = films.sort((a, b) => b.rating - a.rating).slice(0, 5);
+  topFilmsEl.innerHTML = topFilms.length > 0
+    ? topFilms.map(f => `<li><span>${f.title}</span><span>${f.rating}</span></li>`).join('')
+    : '<li style="color: var(--muted);">Aucun film</li>';
+  
+  const recommended = films.filter(f => f.rating >= 8).sort((a, b) => b.rating - a.rating);
+  recommendationsEl.innerHTML = recommended.length > 0
+    ? recommended.map(f => `<li><span>${f.title}</span><span>${f.rating}</span></li>`).join('')
+    : '<li style="color: var(--muted);">Aucune</li>';
+  
+  updateGenreFilter();
+}
+
+//Graphs
+
+function updateCharts() {
+  updateGenreChart();
+  updateYearChart();
+}
+
+function updateGenreChart() {
+  const genreData = {};
+  films.forEach(f => {
+    genreData[f.genre] = (genreData[f.genre] || 0) + 1;
+  });
+  
+  const genreCtx = document.getElementById('genreChart')?.getContext('2d');
+  if (genreCtx) {
+    if (genreChart) genreChart.destroy();
+    genreChart = new Chart(genreCtx, {
+      type: 'pie',
+      data: {
+        labels: Object.keys(genreData),
+        datasets: [{
+          data: Object.values(genreData),
+          backgroundColor: ['#f5c518', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7', '#dfe6e9'],
+          borderColor: '#1f1f1f',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { labels: { color: '#ffffff' } }
+        }
+      }
+    });
   }
-  if(genreChart) genreChart.destroy();
-  genreChart = new Chart(ctx,{type:"bar", data:data, options:{plugins:{legend:{display:false}}}});
 }
 
-function saveData(){
-  localStorage.setItem("films", JSON.stringify(films));
-  localStorage.setItem("directors", JSON.stringify(directors));
+function updateYearChart() {
+  const yearData = {};
+  films.forEach(f => {
+    yearData[f.year] = (yearData[f.year] || 0) + 1;
+  });
+  const years = Object.keys(yearData).sort();
+  
+  const yearCtx = document.getElementById('yearChart')?.getContext('2d');
+  if (yearCtx) {
+    if (yearChart) yearChart.destroy();
+    yearChart = new Chart(yearCtx, {
+      type: 'bar',
+      data: {
+        labels: years,
+        datasets: [{
+          label: 'Nombre de films',
+          data: years.map(y => yearData[y]),
+          backgroundColor: '#f5c518',
+          borderColor: '#e2b616',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { color: '#b3b3b3' },
+            grid: { color: '#333' }
+          },
+          x: {
+            ticks: { color: '#b3b3b3' },
+            grid: { color: '#333' }
+          }
+        },
+        plugins: {
+          legend: { labels: { color: '#ffffff' } }
+        }
+      }
+    });
+  }
 }
 
-updateDirectorSelect();
-renderDirectors();
-renderFilms();
-updateGenreFilter();
-updateDashboard();
-sections.forEach(s => s.classList.remove("active"));
-document.getElementById("dashboard").classList.add("active");
+//API
+ 
+async function searchOmdb() {
+  const query = apiInput.value.trim();
+  
+  if (!query) {
+    alert('Entrez un titre!');
+    return;
+  }
+  
+  apiLoading.style.display = 'block';
+  apiResult.innerHTML = '';
+  
+  try {
+    const res = await fetch(`https://www.omdbapi.com/?s=${query}&apikey=b6003d8a`);
+    const data = await res.json();
+    
+    apiLoading.style.display = 'none';
+    
+    if (data.Search) {
+      apiResult.innerHTML = data.Search.slice(0, 5)
+        .map(m => `
+          <div class="api-item" onclick="getMovieDetails('${m.imdbID}')">
+            <strong>${m.Title}</strong> (${m.Year})
+            <br><small>Cliquez pour importer</small>
+          </div>
+        `).join('');
+    } else {
+      apiResult.innerHTML = '<p>Aucun film trouvé</p>';
+    }
+  } catch (err) {
+    apiLoading.style.display = 'none';
+    apiResult.innerHTML = '<p>Erreur API</p>';
+  }
+}
+
+async function getMovieDetails(imdbId) {
+  try {
+    const res = await fetch(`https://www.omdbapi.com/?i=${imdbId}&apikey=b6003d8a`);
+    const movie = await res.json();
+    if (movie.Response === 'True') {
+      const directorName = movie.Director.split(',')[0].trim();
+      const directorId = createOrGetDirector(directorName);
+      document.getElementById('filmTitle').value = movie.Title;
+      document.getElementById('filmYear').value = movie.Year;
+      document.getElementById('filmDuration').value = movie.Runtime.replace(' min', '');
+      document.getElementById('filmDirector').value = directorId;
+      document.getElementById('filmGenre').value = movie.Genre.split(',')[0].trim();
+      document.getElementById('filmPoster').value = movie.Poster;
+      document.getElementById('filmRating').value = parseFloat(movie.imdbRating) || 7;
+      switchSection('add');
+    }
+  } catch (err) {
+    alert('Erreur lors de la récupération');
+  }
+}
+
+function saveData() {
+  localStorage.setItem('films', JSON.stringify(films));
+  localStorage.setItem('directors', JSON.stringify(directors));
+}

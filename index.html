@@ -1,110 +1,154 @@
-  <!DOCTYPE html>
-  <html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CineTech </title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
-  </head>
-  <body>
-    <div id="app">
-      <aside id="sidebar">
-        <h1>CineTech</h1>
-        <nav>
-          <a href="#dashboard"><i class="fa-solid fa-house"></i> Dashboard</a>
-          <a href="#films"><i class="fa-solid fa-film"></i> Films</a>
-          <a href="#directors"><i class="fa-solid fa-user-tie"></i> Directors</a>
-          <a href="#add"><i class="fa-solid fa-plus"></i> Add </a>
-        </nav>
-      </aside>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CineTech - Dashboard</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
-      <div id="main">
-        <header>
-          <div class="left">
-            <button id="menuBtn"><i class="fa-solid fa-bars"></i></button>
-          </div>
-          <h2 class="brand">CineTech</h2>
-          <div class="header-search">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input id="searchInput" type="text" placeholder="Search films or directors...">
-          </div>
-        </header>
-        <main>
-          <!-- DASHBOARD -->
-          <section id="dashboard" class="active">
-            <h2>Dashboard</h2>
-            <div class="kpi-container">
-              <div class="kpi">
-                <h3>Total Films</h3>
-                <span id="totalFilms">0</span>
-              </div>
-              <div class="kpi">
-                <h3>Total Directors</h3>
-                <span id="totalDirectors">0</span>
-              </div>
+<!--sidebar-->
+  <div id="app">
+    <aside id="sidebar">
+      <h1><i class="fa-solid fa-clapperboard"></i> CineTech</h1>
+      <nav>
+        <a onclick="switchSection('dashboard')"><i class="fa-solid fa-house"></i> Dashboard</a>
+        <a onclick="switchSection('films')"><i class="fa-solid fa-film"></i> Films</a>
+        <a onclick="switchSection('directors')"><i class="fa-solid fa-user-tie"></i> Réalisateurs</a>
+        <a onclick="switchSection('add')"><i class="fa-solid fa-plus"></i> Ajouter</a>
+      </nav>
+    </aside>
+
+    <div id="main">
+       <header>
+        <div class="left">
+          <button id="menuBtn"><i class="fa-solid fa-bars"></i></button>
+          <h2 class="brand">CineTech Dashboard</h2>
+        </div>
+        <div class="header-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input id="searchInput" type="text" placeholder="Rechercher un film..." onkeyup="searchFilms()">
+        </div>
+      </header>
+      <main>
+
+<!--Dashboard-->
+        <section id="dashboard" class="active">
+          <h2><i class="fa-solid fa-chart-line"></i> Dashboard</h2>
+          <div class="kpi-container">
+            <div class="kpi">
+              <h3>Total Films</h3>
+              <span id="totalFilms">0</span>
             </div>
+            <div class="kpi">
+              <h3>Note Moyenne</h3>
+              <span id="avgRating">0.0</span>
+            </div>
+            <div class="kpi">
+              <h3>Total Réalisateurs</h3>
+              <span id="totalDirectors">0</span>
+            </div>
+            <div class="kpi">
+              <h3>Meilleur Genre</h3>
+              <span id="topGenre">-</span>
+            </div>
+          </div>
+          <div class="charts-container">
             <div class="chart-box">
+              <h3><i class="fa-solid fa-chart-pie"></i> Répartition par Genre</h3>
               <canvas id="genreChart"></canvas>
             </div>
-          </section>
-
-          <!-- FILMS -->
-          <section id="films">
-            <h2>Films</h2>
-            <select id="genreFilter"></select>
-            <div id="filmsList"></div>
-          </section>
-
-          <!-- DIRECTORS -->
-          <section id="directors">
-            <h2>Directors</h2>
-            <div id="directorsList"></div>
-          </section>
-
-          <!-- ADD -->
-          <section id="add">
-            <h2>Add Film / Director</h2>
-            <div class="add-container">
-              <form id="filmForm" class="add-film">
-                <h3>Add / Edit Film</h3>
-                <label for="title">Title</label>
-                <input type="text" id="title" placeholder="Film title" required>
-
-                <label for="genre">Genre</label>
-                <input type="text" id="genre" placeholder="Genre">
-
-                <label for="year">Year</label>
-                <input type="number" id="year" placeholder="Year">
-
-                <label for="duration">Duration (min)</label>
-                <input type="number" id="duration" placeholder="Duration">
-
-                <label for="directorSelect">Director</label>
-                <select id="directorSelect">
-                  <option value="">Select director</option>
-                </select>
-
-                <label for="poster">Poster URL</label>
-                <input type="text" id="poster" placeholder="Poster URL">
-
-                <button type="submit">Add Film</button>
-              </form>
-              <form id="directorForm" class="add-director">
-                <h3>Add Director</h3>
-                <label for="directorName">Director Name</label>
-                <input type="text" id="directorName" placeholder="Director name">
-                <button type="submit">Add Director</button>
-              </form>
-
+            <div class="chart-box">
+              <h3><i class="fa-solid fa-chart-bar"></i> Films par Année</h3>
+              <canvas id="yearChart"></canvas>
             </div>
-          </section>
-        </main>
+          </div>
+          <div class="lists-container">
+            <div class="card">
+              <h3><i class="fa-solid fa-star"></i> Top 5 Films</h3>
+              <ul id="topFilms"></ul>
+            </div>
+            <div class="card">
+              <h3><i class="fa-solid fa-heart"></i> Recommandations</h3>
+              <ul id="recommendations"></ul>
+            </div>
+          </div>
+          <div class="api-box">
+            <h3><i class="fa-solid fa-cloud"></i> Recherche Films</h3>
+            <p>Trouvez un film </p>
+            <div class="api-search">
+              <input type="text" id="apiInput" placeholder="Ex: Inception, Matrix...">
+              <button id="apiBtn"><i class="fa-solid fa-search"></i> Rechercher</button>
+            </div>
+            <div id="apiLoading" style="display:none;">Recherche...</div>
+            <div id="apiResult"></div>
+          </div>
+        </section>
 
-      </div>
+<!--Films-->
+        <section id="films">
+          <h2><i class="fa-solid fa-film"></i> Films</h2>
+          <div class="controls">
+            <select id="genreFilter" onchange="filterByGenre()">
+              <option value="">Tous les genres</option>
+            </select>
+            <button id="resetBtn"><i class="fa-solid fa-rotate"></i> Réinitialiser</button>
+          </div>
+          <div id="filmsList"></div>
+        </section>
+
+<!--Realisateurs-->
+        <section id="directors">
+          <h2><i class="fa-solid fa-user-tie"></i> Réalisateurs</h2>
+          <div id="directorsList"></div>
+        </section>
+
+<!--ajout-->
+        <section id="add">
+          <h2><i class="fa-solid fa-plus"></i> Ajouter un Film</h2>
+          <form id="filmForm" class="form-box">
+            <h3>Formulaire Film</h3>            
+            <label>Titre du film *</label>
+            <input type="text" id="filmTitle" required>            
+            <label>Genre *</label>
+            <input type="text" id="filmGenre" placeholder="Action, Drame..." required>            
+            <label>Année *</label>
+            <input type="number" id="filmYear" min="1900" max="2030" required>           
+            <label>Durée (minutes) *</label>
+            <input type="number" id="filmDuration" min="1" required>
+            <label>Réalisateur *</label>
+            <div class="director-select">
+              <select id="filmDirector" required>
+                <option value="">Sélectionner un réalisateur</option>
+              </select>
+              <button type="button" id="addDirBtn" onclick="openModal()">
+                <i class="fa-solid fa-plus"></i>
+              </button>
+            </div>
+            <label>Note (1-10)</label>
+            <input type="number" id="filmRating" min="1" max="10" step="0.1" value="7">            
+            <label>URL Affiche</label>
+            <input type="text" id="filmPoster" placeholder="https://...">            
+            <button type="submit"><i class="fa-solid fa-save"></i> Enregistrer</button>
+          </form>
+        </section>
+      </main>
     </div>
+  </div>
+  
+<!-- le + -->
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">&times;</span>
+      <h2>Ajouter Réalisateur</h2>
+      <input type="text" id="modalDirName" placeholder="Nom du réalisateur">
+      <button onclick="addDirFromModal()">Ajouter</button>
+    </div>
+  </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="script.js"></script>
-  </body>
-  </html>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
