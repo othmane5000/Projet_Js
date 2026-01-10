@@ -1,31 +1,46 @@
+// VARIABLES & DOM ELEMENTS
 const films = JSON.parse(localStorage.getItem('films')) || [];
 const directors = JSON.parse(localStorage.getItem('directors')) || [];
 let filteredFilms = [];
 let genreChart = null;
 let yearChart = null;
-let editingFilmId = null; 
+let editingFilmId = null;
+
+// Sidebar & Header
 const sidebar = document.getElementById('sidebar');
 const menuBtn = document.getElementById('menuBtn');
 let overlay;
+
+// Films Section
 const searchInput = document.getElementById('searchInput');
 const genreFilter = document.getElementById('genreFilter');
-const filmForm = document.getElementById('filmForm');
 const filmsList = document.getElementById('filmsList');
+const resetBtn = document.getElementById('resetBtn');
+
+// Add Film Section
+const filmForm = document.getElementById('filmForm');
+
+// Directors Section
 const directorsList = document.getElementById('directorsList');
 const filmDirectorSelect = document.getElementById('filmDirector');
-const resetBtn = document.getElementById('resetBtn');
-const apiBtn = document.getElementById('apiBtn');
-const apiInput = document.getElementById('apiInput');
-const apiResult = document.getElementById('apiResult');
-const apiLoading = document.getElementById('apiLoading');
 const modal = document.getElementById('modal');
 const modalDirName = document.getElementById('modalDirName');
+
+// Dashboard Section
 const totalFilmsEl = document.getElementById('totalFilms');
 const totalDirectorsEl = document.getElementById('totalDirectors');
 const avgRatingEl = document.getElementById('avgRating');
 const topGenreEl = document.getElementById('topGenre');
 const topFilmsEl = document.getElementById('topFilms');
 const recommendationsEl = document.getElementById('recommendations');
+
+// API Section
+const apiBtn = document.getElementById('apiBtn');
+const apiInput = document.getElementById('apiInput');
+const apiResult = document.getElementById('apiResult');
+const apiLoading = document.getElementById('apiLoading');
+
+// EVENT LISTENERS - INITIALIZATION
 menuBtn.addEventListener('click', toggleSidebar);
 filmForm.addEventListener('submit', addFilm);
 resetBtn.addEventListener('click', resetFilters);
@@ -49,6 +64,10 @@ document.addEventListener('DOMContentLoaded', () => {
   overlay.className = 'sidebar-overlay';
   document.body.appendChild(overlay);
   overlay.addEventListener('click', toggleSidebar);
+  
+  // Masquer la barre de recherche  
+  document.querySelector('.header-search').style.display = 'none';
+  
   renderDirectors();
   updateDirectorSelect();
   renderFilms();
@@ -56,20 +75,37 @@ document.addEventListener('DOMContentLoaded', () => {
   updateDashboard();
 });
 
-//Btn
+
+// GLOBAL / NAVIGATION FUNCTIONS
 
 function toggleSidebar() {
   sidebar.classList.toggle('open');
   overlay.classList.toggle('show');
 }
+
 function switchSection(sectionId) {
   document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
   document.getElementById(sectionId).classList.add('active');
   sidebar.classList.remove('open');
   overlay.classList.remove('show');
+  
+  // Afficher/masquer la barre de recherche selon la section active
+  const searchBar = document.querySelector('.header-search');
+  if (sectionId === 'films') {
+    searchBar.style.display = 'flex';
+  } else {
+    searchBar.style.display = 'none';
+  }
 }
 
-//Films
+// SAVE DATA FUNCTION
+
+function saveData() {
+  localStorage.setItem('films', JSON.stringify(films));
+  localStorage.setItem('directors', JSON.stringify(directors));
+}
+
+// PAGE FILMS 
 
 function addFilm(e) {
   e.preventDefault();
@@ -227,7 +263,8 @@ function updateGenreFilter() {
     genres.map(g => `<option value="${g}">${g}</option>`).join('');
 }
 
-//Realisateurs
+
+// PAGE RÉALISATEURS 
 
 function createOrGetDirector(directorName) {
   let director = directors.find(d => d.name.toLowerCase() === directorName.toLowerCase());
@@ -321,7 +358,8 @@ function updateDirectorSelect() {
     directors.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
 }
 
-//btn + du realisateurs
+
+// MODAL BTN(+)
 
 function openModal() {
   modal.classList.add('show');
@@ -345,7 +383,8 @@ function addDirFromModal() {
   closeModal();
 }
 
-//Dashboard
+
+// PAGE DASHBOARD 
 
 function updateDashboard() {
   updateKPI();
@@ -378,7 +417,7 @@ function updateLists() {
     ? topFilms.map(f => `<li><span>${f.title}</span><span>${f.rating}</span></li>`).join('')
     : '<li style="color: var(--muted);">Aucun film</li>';
   
-  const recommended = films.filter(f => f.rating >= 8).sort((a, b) => b.rating - a.rating);
+  const recommended = films.filter(f => f.rating >= 8.5).sort((a, b) => b.rating - a.rating);
   recommendationsEl.innerHTML = recommended.length > 0
     ? recommended.map(f => `<li><span>${f.title}</span><span>${f.rating}</span></li>`).join('')
     : '<li style="color: var(--muted);">Aucune</li>';
@@ -386,7 +425,7 @@ function updateLists() {
   updateGenreFilter();
 }
 
-//Graphs
+// DASHBOARD - CHARTS
 
 function updateCharts() {
   updateGenreChart();
@@ -466,8 +505,9 @@ function updateYearChart() {
   }
 }
 
-//API
- 
+
+// PAGE AJOUTER (ADD) - API OMDB
+
 async function searchOmdb() {
   const query = apiInput.value.trim();
   

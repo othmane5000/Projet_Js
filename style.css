@@ -141,10 +141,16 @@ header .left {
 .header-search {
   flex: 1;
   max-width: 600px;
-  display: flex;
+  display: none;
   align-items: center;
   background: white;
   border-radius: 8px;
+}
+
+/* Afficher la barre de recherche seulement quand la section films est active */
+#films.active ~ header .header-search,
+#films.active ~ header {
+  /* Cette règle ne fonctionnera pas directement, donc utiliser JavaScript */
 }
 
 .header-search i {
